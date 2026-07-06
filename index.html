@@ -386,6 +386,16 @@ let selectedDate=today();
 let activeTab='agenda';
 
 function today(){return new Date().toISOString().slice(0,10);}
+function fixDate(v){
+  if(!v)return'';
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  // Handle DD/MM/YYYY
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/');return`${y}-${m}-${d}`;}
+  // Handle Date objects serialized as strings
+  try{const d=new Date(s);if(!isNaN(d))return d.toISOString().slice(0,10);}catch(e){}
+  return'';
+}
 function fmt(n){return n&&Number(n)>0?'$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'';}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
 function getCat(id){return state.cats.find(c=>c.id===id)||{id:'otro',label:'Otro',css:'cat-otro',icon:'📌'};}
@@ -796,9 +806,19 @@ function loadFromSheets(){
         const sheetsIds=new Set(data.tasks.map(t=>t.id));
         const soloLocales=state.tasks.filter(t=>!sheetsIds.has(t.id));
         state.tasks=[...data.tasks.map(t=>({
-          id:t.id,name:t.name,cat:t.cat,priority:t.priority,fecha:t.fecha,time:t.time||'',
-          monto:t.monto||0,cc:t.cc||'',done:t.done,pago:t.pago,factura:t.factura,
-          archivos:t.archivos||[],periodo:t.periodo
+          id:t.id,
+          name:t.name,
+          cat:t.cat,
+          priority:t.priority,
+          fecha:fixDate(t.fecha),
+          time:t.time||'',
+          monto:t.monto||0,
+          cc:t.cc||'',
+          done:t.done,
+          pago:t.pago?{...t.pago,fecha:fixDate(t.pago.fecha)}:null,
+          factura:t.factura,
+          archivos:t.archivos||[],
+          periodo:t.periodo?{de:fixDate(t.periodo.de),al:fixDate(t.periodo.al)}:null
         })),...soloLocales];
         nextId=state.tasks.length?Math.max(...state.tasks.map(t=>t.id))+1:1;
         save();render();
@@ -833,7 +853,12 @@ function syncSheets(){
       if(sheetsData.ok&&sheetsData.tasks&&sheetsData.tasks.length){
         // Merge: combina Sheets + local, sin duplicados, local gana si hay conflicto de ID
         const localIds=new Set(state.tasks.map(t=>t.id));
-        const soloSheets=sheetsData.tasks.filter(t=>!localIds.has(t.id));
+        const soloSheets=sheetsData.tasks.filter(t=>!localIds.has(t.id)).map(t=>({
+          id:t.id,name:t.name,cat:t.cat,priority:t.priority,
+          fecha:fixDate(t.fecha),time:t.time||'',monto:t.monto||0,cc:t.cc||'',
+          done:t.done,pago:t.pago?{...t.pago,fecha:fixDate(t.pago?.fecha)}:null,
+          factura:t.factura,archivos:t.archivos||[],periodo:t.periodo
+        }));
         mergedTasks=[...state.tasks,...soloSheets];
         // Actualiza estado con el merge
         state.tasks=mergedTasks;
