@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Agenda de Tesorería — Izer RANMA</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede9;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#a0a09c;
+  --border:rgba(0,0,0,0.11);--border2:rgba(0,0,0,0.20);
+  --radius:8px;--radius-lg:12px;
+  --success:#0F6E56;--success-bg:#E1F5EE;
+  --danger:#A32D2D;--danger-bg:#FCEBEB;
+  --warn:#854F0B;--warn-bg:#FAEEDA;
+  --info:#185FA5;--info-bg:#E6F1FB;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
+  --teal:#0F6E56;--teal-bg:#E1F5EE;
+  --coral:#993C1D;--coral-bg:#FAECE7;
+  --pink:#993556;--pink-bg:#FBEAF0;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;
+  --text:#f0efeb;--text2:#9e9e9a;--text3:#6b6b67;
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.18);
+  --success:#5DCAA5;--success-bg:#04342C;
+  --danger:#F09595;--danger-bg:#501313;
+  --warn:#FAC775;--warn-bg:#412402;
+  --info:#85B7EB;--info-bg:#042C53;
+  --purple:#AFA9EC;--purple-bg:#26215C;
+  --teal:#5DCAA5;--teal-bg:#04342C;
+  --coral:#F0997B;--coral-bg:#4A1B0C;
+  --pink:#ED93B1;--pink-bg:#4B1528;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;padding:1.5rem 1rem}
+.container{max-width:760px;margin:0 auto}
+
+.app-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem}
+.app-header h1{font-size:17px;font-weight:500}
+.app-header .sub{font-size:12px;color:var(--text2);margin-top:2px}
+.logo-pill{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;background:var(--bg2);padding:4px 10px;border-radius:20px;border:0.5px solid var(--border);white-space:nowrap}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin-bottom:1.25rem}
+.metric{background:var(--bg2);border-radius:var(--radius);padding:11px 13px}
+.metric-label{font-size:11px;color:var(--text3);margin-bottom:3px}
+.metric-value{font-size:18px;font-weight:500;color:var(--text)}
+.mv-success{color:var(--success)}.mv-danger{color:var(--danger)}.mv-warn{color:var(--warn)}.mv-info{color:var(--info)}
+
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1.25rem;overflow-x:auto}
+.tab{padding:7px 16px;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
+.view{display:none}.view.active{display:block}
+
+/* AGENDA CALENDAR VIEW */
+.agenda-nav{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.agenda-nav button{padding:5px 11px;border:0.5px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text);font-size:13px;cursor:pointer}
+.agenda-nav button:hover{background:var(--bg2)}
+.agenda-nav .cur-month{font-size:14px;font-weight:500;flex:1;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1.25rem}
+.cal-head{text-align:center;font-size:11px;color:var(--text3);padding:4px 0;font-weight:500}
+.cal-day{min-height:52px;border-radius:var(--radius);border:0.5px solid transparent;padding:4px 5px;cursor:pointer;transition:all .15s;background:var(--bg2)}
+.cal-day:hover{border-color:var(--border2);background:var(--bg)}
+.cal-day.other-month{opacity:.35}
+.cal-day.today{border-color:var(--info)!important;background:var(--info-bg)}
+.cal-day.selected{border-color:var(--text)!important;background:var(--bg)}
+.cal-day.has-tasks{border-color:var(--border2)}
+.cal-num{font-size:12px;font-weight:500;color:var(--text2)}
+.cal-day.today .cal-num{color:var(--info);font-weight:700}
+.cal-day.selected .cal-num{color:var(--text);font-weight:700}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;margin-top:3px}
+.cal-dot{width:5px;height:5px;border-radius:50%}
+
+.day-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.day-title{font-size:15px;font-weight:500}
+.day-count{font-size:12px;color:var(--text3)}
+.add-day-btn{padding:5px 12px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);font-size:12px;cursor:pointer}
+
+/* TASK CARDS */
+.task-list{display:flex;flex-direction:column;gap:5px;margin-bottom:1.25rem}
+.task-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:11px 13px;transition:border-color .15s}
+.task-card:hover{border-color:var(--border2)}
+.task-card.done{opacity:.42}.task-card.done .task-name{text-decoration:line-through;color:var(--text3)}
+.task-card.overdue{border-left:3px solid var(--danger);border-radius:0 var(--radius-lg) var(--radius-lg) 0}
+.task-top{display:flex;align-items:center;gap:9px}
+.check-btn{width:19px;height:19px;border-radius:50%;border:0.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.check-btn:hover{border-color:#1D9E75}.check-btn.checked{background:#1D9E75;border-color:#1D9E75}
+.chk-svg{display:none;width:9px;height:9px}.check-btn.checked .chk-svg{display:block}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-meta{display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap}
+.badge{font-size:10px;padding:2px 7px;border-radius:9px;font-weight:500;white-space:nowrap}
+.b-urgente{background:var(--danger-bg);color:var(--danger)}.b-media{background:var(--warn-bg);color:var(--warn)}.b-baja{background:var(--success-bg);color:var(--success)}
+.b-pend{background:var(--info-bg);color:var(--info)}.b-pag{background:var(--success-bg);color:var(--success)}
+.b-overdue{background:var(--danger-bg);color:var(--danger)}
+.cat-badge{font-size:10px;padding:2px 7px;border-radius:9px;font-weight:500;white-space:nowrap}
+.task-actions{display:flex;gap:5px;flex-shrink:0}
+.icon-btn{width:26px;height:26px;border-radius:var(--radius);border:0.5px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{background:var(--bg2);color:var(--text)}
+.pago-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.chip{font-size:10px;color:var(--text2);background:var(--bg2);padding:2px 7px;border-radius:8px}
+
+/* EXPAND PANEL */
+.expand-panel{border-top:0.5px solid var(--border);margin-top:10px;padding-top:10px;display:none}
+.expand-panel.open{display:block}
+.panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+@media(max-width:500px){.panel-grid{grid-template-columns:1fr}}
+.fullspan{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:11px;color:var(--text3)}
+.fg input,.fg select{font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);width:100%;outline:none;font-family:inherit}
+.fg input:focus,.fg select:focus{border-color:var(--text2)}
+.file-drop{border:0.5px dashed var(--border2);border-radius:var(--radius);padding:9px;text-align:center;cursor:pointer;font-size:12px;color:var(--text3);transition:all .15s;line-height:1.4}
+.file-drop:hover{background:var(--bg2)}.file-drop.has-file{border-style:solid;border-color:#1D9E75;color:var(--success);background:var(--success-bg)}
+.panel-actions{display:flex;gap:7px;justify-content:flex-end}
+.btn-primary{padding:6px 14px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);font-size:12px;cursor:pointer}
+.btn-primary:hover{opacity:.8}
+.btn-ghost{padding:6px 12px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);border-radius:var(--radius);font-size:12px;cursor:pointer}
+.periodo-row{display:flex;gap:8px;flex-wrap:wrap}
+.periodo-row .fg{flex:1;min-width:110px}
+
+/* ADD FORM */
+.add-box{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:13px;margin-bottom:1.25rem}
+.add-box-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:9px}
+.add-form{display:flex;flex-direction:column;gap:8px}
+.add-row{display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+.add-row input,.add-row select{font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+.add-row input[type=text]{flex:1;min-width:150px}
+.add-row input[type=number]{width:110px}
+.add-row input[type=time]{width:86px}
+.add-row input[type=date]{width:138px}
+.add-row select{min-width:130px}
+.add-row .fg-inline{display:flex;flex-direction:column;gap:3px}
+.add-row .fg-inline label{font-size:10px;color:var(--text3)}
+.add-row .fg-inline input,.add-row .fg-inline select{margin:0}
+.new-cat-row{display:flex;gap:7px;align-items:center}
+.new-cat-row input{flex:1;font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none}
+.add-btn{padding:7px 15px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);font-size:13px;cursor:pointer;white-space:nowrap}
+.add-btn:hover{opacity:.8}
+.small-btn{padding:5px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:12px;color:var(--text2);background:transparent;cursor:pointer;white-space:nowrap}
+.small-btn:hover{background:var(--bg);color:var(--text)}
+
+/* FOOTER / PAGOS / ARCHIVOS */
+.footer-row{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:.75rem}
+.action-btn{padding:6px 13px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:12px;color:var(--text2);background:transparent;cursor:pointer;transition:all .15s}
+.action-btn:hover{background:var(--bg2);color:var(--text)}
+.pago-list,.arch-list{display:flex;flex-direction:column;gap:5px;margin-bottom:1.25rem}
+.pago-row{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:11px 13px;display:flex;align-items:center;gap:11px}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pago-row-body{flex:1;min-width:0}
+.pago-row-name{font-size:13px;color:var(--text)}
+.pago-row-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.pago-amount{font-size:14px;font-weight:500;text-align:right;white-space:nowrap}
+.pago-amount.pagado{color:var(--success)}.pago-amount.pend{color:var(--danger)}
+.arch-row{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:11px 13px;display:flex;align-items:flex-start;gap:11px}
+.arch-icon{width:32px;height:32px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--bg2)}
+.arch-body{flex:1;min-width:0}
+.arch-name{font-size:13px;font-weight:500;color:var(--text)}
+.arch-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.arch-periodo{font-size:11px;color:var(--teal);margin-top:2px}
+.empty-state{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+.toast{position:fixed;bottom:1.25rem;right:1.25rem;background:var(--text);color:var(--bg);padding:9px 16px;border-radius:var(--radius-lg);font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+
+/* CAT COLORS */
+.cat-pago{background:var(--danger-bg);color:var(--danger)}
+.cat-reembolso{background:var(--warn-bg);color:var(--warn)}
+.cat-comisiones{background:var(--purple-bg);color:var(--purple)}
+.cat-ventas{background:var(--teal-bg);color:var(--teal)}
+.cat-reunion{background:var(--info-bg);color:var(--info)}
+.cat-renta{background:var(--coral-bg);color:var(--coral)}
+.cat-evento{background:var(--pink-bg);color:var(--pink)}
+.cat-comisionistas{background:var(--purple-bg);color:var(--purple)}
+.cat-sipare{background:#EEEDFE;color:#534AB7}
+.cat-isn{background:#FAEEDA;color:#854F0B}
+.cat-fonacot{background:#E6F1FB;color:#185FA5}
+.cat-isr{background:#FCEBEB;color:#A32D2D}
+.cat-insumos{background:#F1EFE8;color:#5F5E5A}
+.cat-papeleria{background:#F1EFE8;color:#5F5E5A}
+.cat-nomina{background:#EEEDFE;color:#534AB7}
+.cat-ingreso{background:#E1F5EE;color:#0F6E56;border:0.5px solid #5DCAA5}
+.cat-otro{background:var(--bg2);color:var(--text2)}
+@media(prefers-color-scheme:dark){
+.cat-sipare{background:#26215C;color:#AFA9EC}
+.cat-isn{background:#412402;color:#FAC775}
+.cat-fonacot{background:#042C53;color:#85B7EB}
+.cat-isr{background:#501313;color:#F09595}
+.cat-insumos{background:#2C2C2A;color:#B4B2A9}
+.cat-papeleria{background:#2C2C2A;color:#B4B2A9}
+.cat-nomina{background:#26215C;color:#AFA9EC}
+.cat-ingreso{background:#04342C;color:#5DCAA5;border:0.5px solid #1D9E75}
+}
+
+/* DATE GROUP in All Tasks */
+.date-group{margin-bottom:1rem}
+.date-group-label{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;padding:0 2px;display:flex;align-items:center;gap:8px}
+.date-group-label::after{content:'';flex:1;height:0.5px;background:var(--border)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-header">
+    <div>
+      <h1>Agenda de tesorería</h1>
+      <div class="sub" id="date-display"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div id="sync-status" style="font-size:11px;color:var(--text3);display:none"></div>
+      <button onclick="loadFromSheets()" id="load-btn" style="padding:5px 13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M6 1v6M6 7L3.5 4.5M6 7l2.5-2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 9v1.5h9V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Cargar de Sheets
+      </button>
+      <button onclick="syncSheets()" id="sync-btn" style="padding:5px 13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M6 0l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sincronizar Sheets
+      </button>
+      <div class="logo-pill">RANMA · Izer</div>
+    </div>
+  </div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('agenda')">Agenda</button>
+    <button class="tab" onclick="switchTab('todas')">Todas las tareas</button>
+    <button class="tab" onclick="switchTab('pagos')">Pagos</button>
+    <button class="tab" onclick="switchTab('archivos')">Archivos</button>
+  </div>
+
+  <!-- AGENDA (calendar) -->
+  <div class="view active" id="view-agenda">
+    <div class="agenda-nav">
+      <button onclick="prevMonth()">&#8592;</button>
+      <div class="cur-month" id="cal-month-label"></div>
+      <button onclick="nextMonth()">&#8594;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+
+    <div class="day-header">
+      <div>
+        <div class="day-title" id="day-title">Hoy</div>
+        <div class="day-count" id="day-count"></div>
+      </div>
+      <button class="add-day-btn" onclick="scrollToAdd()">+ Nueva tarea</button>
+    </div>
+    <div class="task-list" id="day-task-list"></div>
+
+    <div class="add-box" id="add-box-agenda">
+      <div class="add-box-title">Nueva tarea</div>
+      <div class="add-form">
+        <div class="add-row">
+          <input type="text" id="nt-name" placeholder="Descripción de la tarea..."/>
+          <div class="fg-inline">
+            <label>Categoría</label>
+            <select id="nt-cat" onchange="onCatChange()"></select>
+          </div>
+          <div class="fg-inline">
+            <label>Prioridad</label>
+            <select id="nt-prior"><option value="urgente">Urgente</option><option value="media" selected>Media</option><option value="baja">Baja</option></select>
+          </div>
+        </div>
+        <div class="add-row">
+          <div class="fg-inline">
+            <label>Fecha</label>
+            <input type="date" id="nt-fecha"/>
+          </div>
+          <div class="fg-inline">
+            <label>Hora</label>
+            <input type="time" id="nt-time"/>
+          </div>
+          <div class="fg-inline">
+            <label>Monto (opcional)</label>
+            <input type="number" id="nt-monto" placeholder="$0.00" step="0.01"/>
+          </div>
+          <div class="fg-inline">
+            <label>Centro de costos</label>
+            <input type="text" id="nt-cc" placeholder="Ej. CC-001" style="width:110px"/>
+          </div>
+          <button class="add-btn" onclick="addTask()" style="align-self:flex-end">+ Agregar</button>
+        </div>
+        <div class="new-cat-row" id="new-cat-row" style="display:none">
+          <input type="text" id="nt-newcat" placeholder="Nombre de nueva categoría..."/>
+          <button class="small-btn" onclick="addCategory()">+ Crear</button>
+          <button class="small-btn" onclick="cancelNewCat()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAS LAS TAREAS (grouped by date) -->
+  <div class="view" id="view-todas">
+    <div style="display:flex;gap:7px;margin-bottom:1rem;flex-wrap:wrap">
+      <select id="filter-cat" onchange="renderAll()" style="font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none"></select>
+      <select id="filter-prior" onchange="renderAll()" style="font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
+        <option value="">Todas las prioridades</option>
+        <option value="urgente">Urgente</option>
+        <option value="media">Media</option>
+        <option value="baja">Baja</option>
+      </select>
+      <select id="filter-status" onchange="renderAll()" style="font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none">
+        <option value="">Todas</option>
+        <option value="pending">Pendientes</option>
+        <option value="done">Completadas</option>
+      </select>
+      <select id="filter-cc" onchange="renderAll()" style="font-size:13px;padding:6px 9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none"></select>
+    </div>
+    <div id="all-task-list"></div>
+    <div class="footer-row">
+      <button class="action-btn" onclick="clearDone()">Limpiar completadas</button>
+      <button class="action-btn" onclick="exportJSON()">Exportar JSON</button>
+      <button class="action-btn" onclick="exportTxt()">Reporte .txt</button>
+    </div>
+  </div>
+
+  <!-- PAGOS -->
+  <div class="view" id="view-pagos">
+    <div class="pago-list" id="pago-list"></div>
+    <div class="footer-row"><button class="action-btn" onclick="exportTxt()">Exportar reporte</button></div>
+  </div>
+
+  <!-- ARCHIVOS -->
+  <div class="view" id="view-archivos">
+    <div class="arch-list" id="arch-list"></div>
+    <div class="footer-row"><button class="action-btn" onclick="exportJSON()">Exportar todo</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxn7nfb-EkglLcZLkmDX51vbUUZQph6PL85GkoHJJYgm9EFW7bLiakxheuy-xgJuJo/exec';
+const DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DAYS_SHORT=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS_LONG=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MONTHS_CAP=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const DEFAULT_CATS=[
+  {id:'pago',label:'Pago / factura',css:'cat-pago',icon:'💳'},
+  {id:'reembolso',label:'Reembolso',css:'cat-reembolso',icon:'↩'},
+  {id:'comisiones',label:'Comisiones / incentivos',css:'cat-comisiones',icon:'📊'},
+  {id:'ventas',label:'Ventas / archivos',css:'cat-ventas',icon:'📁'},
+  {id:'reunion',label:'Reunión / junta',css:'cat-reunion',icon:'🗓'},
+  {id:'renta',label:'Renta',css:'cat-renta',icon:'🏢'},
+  {id:'evento',label:'Evento corporativo',css:'cat-evento',icon:'🎯'},
+  {id:'comisionistas',label:'Pago comisionistas de confianza',css:'cat-comisionistas',icon:'🤝'},
+  {id:'sipare',label:'SIPARE — Seg. Social / IMSS',css:'cat-sipare',icon:'🏛'},
+  {id:'isn',label:'ISN — Impuesto sobre Nómina',css:'cat-isn',icon:'📋'},
+  {id:'fonacot',label:'FONACOT',css:'cat-fonacot',icon:'🏠'},
+  {id:'isr',label:'ISR — Impuesto sobre la Renta',css:'cat-isr',icon:'📑'},
+  {id:'insumos',label:'Insumos',css:'cat-insumos',icon:'📦'},
+  {id:'papeleria',label:'Papelería',css:'cat-papeleria',icon:'✏'},
+  {id:'nomina',label:'Nómina',css:'cat-nomina',icon:'👥'},
+  {id:'csb',label:'Cobro factura CSB (Consubanco)',css:'cat-ingreso',icon:'💰',tipo:'ingreso'},
+  {id:'gnp',label:'Cobro factura GNP',css:'cat-ingreso',icon:'💰',tipo:'ingreso'},
+  {id:'bancrea',label:'Cobro factura Bancrea',css:'cat-ingreso',icon:'💰',tipo:'ingreso'},
+];
+
+function loadState(){
+  try{
+    const s=JSON.parse(localStorage.getItem('ranma_v5')||localStorage.getItem('ranma_v4'));
+    if(s&&s.tasks){
+      s.cats=DEFAULT_CATS.map(dc=>{
+        const existing=s.cats&&s.cats.find(c=>c.id===dc.id);
+        return existing?{...dc,...existing}:dc;
+      });
+      DEFAULT_CATS.forEach(dc=>{if(!s.cats.find(c=>c.id===dc.id))s.cats.push(dc);});
+      return s;
+    }
+  }catch(e){}
+  const td=today();
+  return{cats:DEFAULT_CATS.map(c=>({...c})),tasks:[
+    {id:1,name:'Pagar factura de remodelación CDMX Añil',cat:'pago',priority:'urgente',fecha:td,time:'',done:false,monto:0,cc:'',factura:null,pago:null,archivos:[],periodo:null},
+    {id:2,name:'Reembolso TP Sucursal Mty',cat:'reembolso',priority:'urgente',fecha:td,time:'',done:false,monto:0,cc:'',factura:null,pago:null,archivos:[],periodo:null},
+    {id:3,name:'Pagar 2da factura remodelaciones CDMX Añil',cat:'pago',priority:'urgente',fecha:td,time:'',done:false,monto:0,cc:'',factura:null,pago:null,archivos:[],periodo:null},
+    {id:4,name:'Reembolso cobro abril WIM',cat:'reembolso',priority:'urgente',fecha:td,time:'',done:false,monto:0,cc:'',factura:null,pago:null,archivos:[],periodo:null},
+    {id:5,name:'Reunión Teams — adecuaciones nvo corporativo RANMA',cat:'reunion',priority:'media',fecha:td,time:'11:00',done:false,monto:0,cc:'',factura:null,pago:null,archivos:[],periodo:null},
+  ]};
+}
+
+let state=loadState();
+let nextId=state.tasks.length?Math.max(...state.tasks.map(t=>t.id))+1:6;
+let openPanel=null;
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+let selectedDate=today();
+let activeTab='agenda';
+
+function today(){return new Date().toISOString().slice(0,10);}
+function fmt(n){return n&&Number(n)>0?'$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}):'';}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+function getCat(id){return state.cats.find(c=>c.id===id)||{id:'otro',label:'Otro',css:'cat-otro',icon:'📌'};}
+function save(){localStorage.setItem('ranma_v5',JSON.stringify(state));}
+
+function fmtDateLabel(d){
+  const td=today();
+  const tm=new Date();tm.setDate(tm.getDate()+1);
+  const tom=tm.toISOString().slice(0,10);
+  if(d===td)return'Hoy · '+fmtDateShort(d);
+  if(d===tom)return'Mañana · '+fmtDateShort(d);
+  if(d<td)return'Vencido · '+fmtDateShort(d);
+  return fmtDateShort(d);
+}
+function fmtDateShort(d){
+  if(!d)return'Sin fecha';
+  const[y,m,day]=d.split('-').map(Number);
+  const dt=new Date(y,m-1,day);
+  return DAYS_SHORT[dt.getDay()]+' '+day+' '+MONTHS_LONG[m-1]+' '+y;
+}
+
+function updateDateDisplay(){
+  const n=new Date();
+  document.getElementById('date-display').textContent=DAYS[n.getDay()]+' '+n.getDate()+' de '+MONTHS_LONG[n.getMonth()]+', '+n.getFullYear();
+}
+
+// ── CALENDAR ─────────────────────────────────────────────────
+function buildCalendar(){
+  const label=MONTHS_CAP[calMonth]+' '+calYear;
+  document.getElementById('cal-month-label').textContent=label;
+  const first=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
+  const td=today();
+
+  const tasksByDate={};
+  state.tasks.forEach(t=>{if(t.fecha){if(!tasksByDate[t.fecha])tasksByDate[t.fecha]=[];tasksByDate[t.fecha].push(t);}});
+
+  let html='';
+  DAYS_SHORT.forEach(d=>html+=`<div class="cal-head">${d}</div>`);
+
+  let cells=[];
+  for(let i=first-1;i>=0;i--)cells.push({day:daysInPrev-i,cur:false,date:isoDate(calYear,calMonth-1,daysInPrev-i)});
+  for(let i=1;i<=daysInMonth;i++)cells.push({day:i,cur:true,date:isoDate(calYear,calMonth,i)});
+  let rem=42-cells.length;
+  for(let i=1;i<=rem;i++)cells.push({day:i,cur:false,date:isoDate(calYear,calMonth+1,i)});
+
+  cells.forEach(c=>{
+    const tasks=tasksByDate[c.date]||[];
+    const isToday=c.date===td;
+    const isSel=c.date===selectedDate;
+    const dots=tasks.slice(0,4).map(t=>{
+      const colors={
+        pago:'#A32D2D',reembolso:'#854F0B',comisiones:'#534AB7',ventas:'#0F6E56',
+        reunion:'#185FA5',renta:'#993C1D',evento:'#993556',comisionistas:'#534AB7',
+        sipare:'#534AB7',isn:'#854F0B',fonacot:'#185FA5',isr:'#A32D2D',
+        nomina:'#0F6E56',insumos:'#888780',papeleria:'#888780',
+        csb:'#0F6E56',gnp:'#0F6E56',bancrea:'#0F6E56'
+      };
+      const col=colors[t.cat]||'#888780';
+      return`<div class="cal-dot" style="background:${col}"></div>`;
+    }).join('');
+    html+=`<div class="cal-day ${!c.cur?'other-month':''} ${isToday?'today':''} ${isSel?'selected':''} ${tasks.length?'has-tasks':''}" onclick="selectDate('${c.date}')">
+      <div class="cal-num">${c.day}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  });
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+function isoDate(y,m,d){const dt=new Date(y,m,d);return dt.toISOString().slice(0,10);}
+function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}buildCalendar();}
+function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}buildCalendar();}
+
+function selectDate(d){
+  selectedDate=d;
+  document.getElementById('nt-fecha').value=d;
+  buildCalendar();
+  renderDayTasks();
+}
+
+function renderDayTasks(){
+  const tasks=state.tasks.filter(t=>t.fecha===selectedDate).sort((a,b)=>{
+    const po={urgente:0,media:1,baja:2};
+    return (po[a.priority]||1)-(po[b.priority]||1);
+  });
+  document.getElementById('day-title').textContent=fmtDateLabel(selectedDate);
+  document.getElementById('day-count').textContent=tasks.length?tasks.length+' tarea'+(tasks.length>1?'s':''):'Sin tareas este día';
+  document.getElementById('day-task-list').innerHTML=tasks.length?tasks.map(t=>taskCardHTML(t)).join(''):'<div class="empty-state">Sin tareas para este día</div>';
+}
+
+function scrollToAdd(){document.getElementById('add-box-agenda').scrollIntoView({behavior:'smooth'});}
+
+// ── CATEGORY ─────────────────────────────────────────────────
+function buildCatSelect(selId,val){
+  const el=document.getElementById(selId);if(!el)return;
+  el.innerHTML=state.cats.map(c=>`<option value="${c.id}" ${val===c.id?'selected':''}>${c.icon} ${c.label}</option>`).join('')+'<option value="__new__">+ Nueva categoría...</option>';
+}
+function buildFilterCat(){
+  const el=document.getElementById('filter-cat');if(!el)return;
+  el.innerHTML='<option value="">Todas las categorías</option>'+state.cats.map(c=>`<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+}
+function buildFilterCC(){
+  const el=document.getElementById('filter-cc');if(!el)return;
+  const ccs=[...new Set(state.tasks.map(t=>t.cc).filter(Boolean))].sort();
+  el.innerHTML='<option value="">Todos los centros de costos</option>'+ccs.map(cc=>`<option value="${cc}">CC: ${cc}</option>`).join('');
+}
+function onCatChange(){
+  const v=document.getElementById('nt-cat').value;
+  document.getElementById('new-cat-row').style.display=v==='__new__'?'flex':'none';
+}
+function addCategory(){
+  const name=document.getElementById('nt-newcat').value.trim();if(!name){toast('Escribe el nombre');return;}
+  const id='cat_'+Date.now();
+  state.cats.push({id,label:name,css:'cat-otro',icon:'📌'});
+  save();buildCatSelect('nt-cat',id);buildFilterCat();
+  document.getElementById('nt-cat').value=id;
+  document.getElementById('new-cat-row').style.display='none';
+  document.getElementById('nt-newcat').value='';
+  toast('Categoría "'+name+'" creada');
+}
+function cancelNewCat(){document.getElementById('new-cat-row').style.display='none';document.getElementById('nt-cat').value=state.cats[0]?.id||'';}
+
+// ── TASK CRUD ─────────────────────────────────────────────────
+function addTask(){
+  const name=document.getElementById('nt-name').value.trim();
+  if(!name){toast('Escribe una descripción');return;}
+  const cat=document.getElementById('nt-cat').value;
+  if(cat==='__new__'){toast('Primero crea la categoría');return;}
+  const fecha=document.getElementById('nt-fecha').value||today();
+  const cc=document.getElementById('nt-cc').value.trim();
+  state.tasks.push({id:nextId++,name,cat,priority:document.getElementById('nt-prior').value,fecha,time:document.getElementById('nt-time').value,monto:document.getElementById('nt-monto').value||0,cc,done:false,factura:null,pago:null,archivos:[],periodo:null});
+  document.getElementById('nt-name').value='';document.getElementById('nt-monto').value='';document.getElementById('nt-time').value='';document.getElementById('nt-cc').value='';
+  selectedDate=fecha;
+  const[y,m]=fecha.split('-').map(Number);calYear=y;calMonth=m-1;
+  save();render();toast('Tarea agregada para '+fmtDateShort(fecha));
+}
+
+function toggleDone(id){const t=state.tasks.find(t=>t.id===id);if(t){t.done=!t.done;save();render();}}
+function deleteTask(id){if(!confirm('¿Eliminar esta tarea?'))return;state.tasks=state.tasks.filter(t=>t.id!==id);if(openPanel===id)openPanel=null;save();render();}
+function togglePanel(id){openPanel=openPanel===id?null:id;render();}
+
+function toggleOtroBanco(id){
+  const sel=document.getElementById('pb-'+id);
+  const inp=document.getElementById('pb-otro-'+id);
+  if(inp)inp.style.display=sel.value==='__otro__'?'block':'none';
+}
+
+function savePanel(id){
+  const t=state.tasks.find(t=>t.id===id);if(!t)return;
+  t.monto=document.getElementById('pm-'+id).value||0;
+  const ccInput=document.getElementById('pcc-'+id);
+  if(ccInput)t.cc=ccInput.value.trim();
+  const ref=document.getElementById('pr-'+id)?.value;
+  const bancoSel=document.getElementById('pb-'+id)?.value;
+  const bancoOtro=document.getElementById('pb-otro-'+id)?.value?.trim();
+  const banco=bancoSel==='__otro__'?(bancoOtro||'Otro'):bancoSel;
+  const fecha=document.getElementById('pf-'+id)?.value;
+  if(ref||banco||fecha){t.pago={ref,banco,fecha:fecha||today()};t.done=true;}
+  const pd=document.getElementById('pp-de-'+id);const ph=document.getElementById('pp-al-'+id);
+  if(pd&&ph&&(pd.value||ph.value)){t.periodo={de:pd.value,al:ph.value};}
+  openPanel=null;save();render();toast('Guardado');
+}
+
+function handleFile(id,input,tipo){
+  const file=input.files[0];if(!file)return;
+  const t=state.tasks.find(t=>t.id===id);if(!t)return;
+  const rec={name:file.name,size:file.size,tipo,fecha:today()};
+  if(tipo==='factura')t.factura=rec;
+  else{if(!t.archivos)t.archivos=[];t.archivos.push(rec);}
+  save();
+  const area=document.getElementById(tipo==='factura'?'fa-'+id:'aa-'+id);
+  if(area){area.classList.add('has-file');area.textContent='✓ '+file.name;}
+  toast((tipo==='factura'?'Factura':'Archivo')+' adjunto');
+}
+
+function clearDone(){if(!confirm('¿Eliminar tareas completadas?'))return;state.tasks=state.tasks.filter(t=>!t.done);save();render();}
+
+// ── TASK CARD HTML ────────────────────────────────────────────
+function taskCardHTML(t){
+  const cat=getCat(t.cat);
+  const isOpen=openPanel===t.id;
+  const td=today();
+  const overdue=t.fecha&&t.fecha<td&&!t.done;
+  const isVentas=t.cat==='ventas'||getCat(t.cat).label.toLowerCase().includes('venta')||getCat(t.cat).label.toLowerCase().includes('archivo');
+  return`<div class="task-card ${t.done?'done':''} ${overdue?'overdue':''}">
+    <div class="task-top">
+      <button class="check-btn ${t.done?'checked':''}" onclick="toggleDone(${t.id})">
+        <svg class="chk-svg" viewBox="0 0 9 9" fill="none"><path d="M1 4.5L3.5 7L8 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="task-body">
+        <div class="task-name">${t.name}</div>
+        <div class="task-meta">
+          <span class="cat-badge ${cat.css}">${cat.icon} ${cat.label}</span>
+          <span class="badge b-${t.priority}">${t.priority==='urgente'?'Urgente':t.priority==='media'?'Media':'Baja'}</span>
+          ${getCat(t.cat).tipo==='ingreso'?`<span class="badge" style="background:#E1F5EE;color:#0F6E56;border:0.5px solid #5DCAA5">↑ Ingreso</span>`:''}
+          ${t.time?`<span style="font-size:10px;color:var(--text2)">${t.time}</span>`:''}
+          ${overdue?`<span class="badge b-overdue">Vencido</span>`:''}
+          ${t.monto>0?`<span style="font-size:11px;font-weight:500;color:var(--text)">${fmt(t.monto)}</span>`:''}
+          <span class="badge ${t.pago?'b-pag':'b-pend'}">${t.pago?'Pagado':'Sin pago'}</span>
+          ${t.factura?`<span class="badge" style="background:var(--info-bg);color:var(--info)">Factura</span>`:''}
+          ${t.archivos&&t.archivos.length?`<span class="badge" style="background:var(--teal-bg);color:var(--teal)">${t.archivos.length} archivo${t.archivos.length>1?'s':''}</span>`:''}
+          ${t.cc?`<span class="badge" style="background:var(--bg2);color:var(--text2);border:0.5px solid var(--border2)">CC: ${t.cc}</span>`:''}
+        </div>
+        ${t.pago?`<div class="pago-chips"><span class="chip">REF: ${t.pago.ref||'—'}</span><span class="chip">${t.pago.banco||'—'}</span><span class="chip">${t.pago.fecha}</span></div>`:''}
+        ${t.periodo&&(t.periodo.de||t.periodo.al)?`<div class="pago-chips"><span class="chip" style="color:var(--teal)">Periodo: ${t.periodo.de||'?'} al ${t.periodo.al||'?'}</span></div>`:''}
+      </div>
+      <div class="task-actions">
+        <button class="icon-btn" onclick="togglePanel(${t.id})">${isOpen?'▲':'▼'}</button>
+        <button class="icon-btn" onclick="deleteTask(${t.id})">✕</button>
+      </div>
+    </div>
+    <div class="expand-panel ${isOpen?'open':''}">
+      <div class="panel-grid">
+        <div class="fg"><label>Monto</label><input type="number" id="pm-${t.id}" value="${t.monto||''}" placeholder="$0.00" step="0.01"/></div>
+        <div class="fg"><label>Factura / archivo de pago (PDF, XML, Excel, imagen)</label>
+          <div class="file-drop ${t.factura?'has-file':''}" id="fa-${t.id}" onclick="document.getElementById('fi-${t.id}').click()">${t.factura?'✓ '+t.factura.name:'Toca para adjuntar'}</div>
+          <input type="file" id="fi-${t.id}" style="display:none" accept=".pdf,.xml,.jpg,.jpeg,.png,.xlsx,.xls,.csv" onchange="handleFile(${t.id},this,'factura')"/>
+        </div>
+        <div class="fg"><label>Centro de costos</label><input type="text" id="pcc-${t.id}" value="${t.cc||''}" placeholder="Ej. CC-001"/></div>
+        <div class="fg"><label>Referencia / folio de pago</label><input type="text" id="pr-${t.id}" value="${t.pago?t.pago.ref:''}" placeholder="Ref. transferencia..."/></div>
+        <div class="fg"><label>Pago a</label>
+          <select id="pb-${t.id}" onchange="toggleOtroBanco(${t.id})">
+            <option value="">— seleccionar —</option>
+            ${['BBVA','Santander','Banamex','Banorte','HSBC','Scotiabank','Banregio','Bancrea','Efectivo','Cheque'].map(b=>`<option ${t.pago&&t.pago.banco===b?'selected':''}>${b}</option>`).join('')}
+            <option value="__otro__" ${t.pago&&!['BBVA','Santander','Banamex','Banorte','HSBC','Scotiabank','Banregio','Bancrea','Efectivo','Cheque',''].includes(t.pago.banco)?'selected':''}>Otro...</option>
+          </select>
+          <input type="text" id="pb-otro-${t.id}" placeholder="Escribe el banco o beneficiario..." style="margin-top:5px;display:${t.pago&&!['BBVA','Santander','Banamex','Banorte','HSBC','Scotiabank','Banregio','Bancrea','Efectivo','Cheque',''].includes(t.pago?.banco)?'block':'none'}" value="${t.pago&&!['BBVA','Santander','Banamex','Banorte','HSBC','Scotiabank','Banregio','Bancrea','Efectivo','Cheque',''].includes(t.pago?.banco)?t.pago.banco:''}"/>
+        </div>
+        <div class="fg"><label>Fecha de pago</label><input type="date" id="pf-${t.id}" value="${t.pago?t.pago.fecha:today()}"/></div>
+        <div class="fg"><label>Archivo adicional (ventas / reporte)</label>
+          <div class="file-drop ${t.archivos&&t.archivos.length?'has-file':''}" id="aa-${t.id}" onclick="document.getElementById('ai-${t.id}').click()">${t.archivos&&t.archivos.length?'✓ '+t.archivos.map(a=>a.name).join(', '):'Adjuntar archivo'}</div>
+          <input type="file" id="ai-${t.id}" style="display:none" accept=".pdf,.xml,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.zip" onchange="handleFile(${t.id},this,'archivo')"/>
+        </div>
+        ${isVentas?`<div class="fg fullspan"><label>Periodo que cubre</label>
+          <div class="periodo-row">
+            <div class="fg"><label>De</label><input type="date" id="pp-de-${t.id}" value="${t.periodo?t.periodo.de:''}"/></div>
+            <div class="fg"><label>Al</label><input type="date" id="pp-al-${t.id}" value="${t.periodo?t.periodo.al:''}"/></div>
+          </div></div>`:''}
+      </div>
+      <div class="panel-actions">
+        <button class="btn-ghost" onclick="togglePanel(${t.id})">Cancelar</button>
+        <button class="btn-primary" onclick="savePanel(${t.id})">Guardar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── RENDER ALL TASKS (grouped by date) ───────────────────────
+function renderAll(){
+  const fCat=document.getElementById('filter-cat')?.value||'';
+  const fPrior=document.getElementById('filter-prior')?.value||'';
+  const fStatus=document.getElementById('filter-status')?.value||'';
+  const fCC=document.getElementById('filter-cc')?.value||'';
+  let tasks=[...state.tasks];
+  if(fCat)tasks=tasks.filter(t=>t.cat===fCat);
+  if(fPrior)tasks=tasks.filter(t=>t.priority===fPrior);
+  if(fStatus==='pending')tasks=tasks.filter(t=>!t.done);
+  if(fStatus==='done')tasks=tasks.filter(t=>t.done);
+  if(fCC)tasks=tasks.filter(t=>t.cc===fCC);
+  tasks.sort((a,b)=>(a.fecha||'9999')>(b.fecha||'9999')?1:-1);
+
+  const grouped={};
+  tasks.forEach(t=>{const k=t.fecha||'sin-fecha';if(!grouped[k])grouped[k]=[];grouped[k].push(t);});
+
+  const container=document.getElementById('all-task-list');
+  if(!tasks.length){container.innerHTML='<div class="empty-state">Sin tareas que coincidan</div>';return;}
+
+  const td=today();
+  let html='';
+  Object.keys(grouped).sort().forEach(date=>{
+    const label=date==='sin-fecha'?'Sin fecha':fmtDateLabel(date);
+    const isOverdue=date!=='sin-fecha'&&date<td;
+    html+=`<div class="date-group">
+      <div class="date-group-label" style="${isOverdue?'color:var(--danger)':''}">${label}</div>
+      <div class="task-list" style="margin-bottom:0">${grouped[date].map(t=>taskCardHTML(t)).join('')}</div>
+    </div>`;
+  });
+  container.innerHTML=html;
+}
+
+// ── PAGOS & ARCHIVOS ──────────────────────────────────────────
+function renderPagos(){
+  const container=document.getElementById('pago-list');
+  const con=state.tasks.filter(t=>t.monto>0).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+  if(!con.length){container.innerHTML='<div class="empty-state">Sin montos registrados todavía.</div>';return;}
+  container.innerHTML=con.map(t=>{
+    const cat=getCat(t.cat);
+    return`<div class="pago-row">
+      <div class="dot" style="background:${t.pago?'#1D9E75':'#E24B4A'}"></div>
+      <div class="pago-row-body">
+        <div class="pago-row-name">${t.name}</div>
+        <div class="pago-row-sub">
+          <span class="cat-badge ${cat.css}" style="font-size:10px;padding:1px 6px">${cat.icon} ${cat.label}</span>
+          ${t.fecha?' · '+fmtDateShort(t.fecha):''}
+          ${t.pago?' · Pagado '+t.pago.fecha+' · '+(t.pago.banco||'—')+' · REF: '+(t.pago.ref||'—'):'  Sin pago registrado'}
+        </div>
+      </div>
+      <div class="pago-amount ${t.pago?'pagado':'pend'}">${fmt(t.monto)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderArchivos(){
+  const container=document.getElementById('arch-list');
+  const all=[];
+  const iconMap={'.pdf':'📄','.xml':'🗂','.xlsx':'📊','.xls':'📊','.csv':'📊','.jpg':'🖼','.jpeg':'🖼','.png':'🖼','.zip':'🗜'};
+  function icon(name){const ext=name.slice(name.lastIndexOf('.')).toLowerCase();return iconMap[ext]||'📎';}
+  state.tasks.forEach(t=>{
+    const cat=getCat(t.cat);
+    if(t.factura)all.push({...t.factura,tarea:t.name,fechaTarea:t.fecha,cat,tipo:'Factura',periodo:null});
+    (t.archivos||[]).forEach(a=>all.push({...a,tarea:t.name,fechaTarea:t.fecha,cat,tipo:'Archivo',periodo:t.periodo}));
+  });
+  if(!all.length){container.innerHTML='<div class="empty-state">Sin archivos adjuntos todavía.</div>';return;}
+  container.innerHTML=all.map(a=>`<div class="arch-row">
+    <div class="arch-icon">${icon(a.name)}</div>
+    <div class="arch-body">
+      <div class="arch-name">${a.name}</div>
+      <div class="arch-meta">${a.tipo} · ${a.tarea}${a.fechaTarea?' · '+fmtDateShort(a.fechaTarea):''}</div>
+      ${a.periodo&&(a.periodo.de||a.periodo.al)?`<div class="arch-periodo">Periodo: ${a.periodo.de||'?'} al ${a.periodo.al||'?'}</div>`:''}
+    </div>
+    <span class="cat-badge ${a.cat.css}" style="font-size:10px;padding:2px 7px;flex-shrink:0">${a.cat.icon}</span>
+  </div>`).join('');
+}
+
+// ── METRICS ───────────────────────────────────────────────────
+function calcMetrics(){
+  const ingresos=state.tasks.filter(t=>getCat(t.cat).tipo==='ingreso'&&t.monto>0).reduce((a,t)=>a+Number(t.monto),0);
+  const egresos=state.tasks.filter(t=>getCat(t.cat).tipo!=='ingreso'&&t.monto>0).reduce((a,t)=>a+Number(t.monto),0);
+  const pagado=state.tasks.filter(t=>t.pago&&t.monto>0&&getCat(t.cat).tipo!=='ingreso').reduce((a,t)=>a+Number(t.monto),0);
+  const td=today();
+  const vencidas=state.tasks.filter(t=>!t.done&&t.fecha&&t.fecha<td&&getCat(t.cat).tipo!=='ingreso').length;
+  const hoy=state.tasks.filter(t=>t.fecha===td&&!t.done).length;
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Ingresos esperados</div><div class="metric-value mv-success">${fmt(ingresos)||'—'}</div></div>
+    <div class="metric"><div class="metric-label">Egresos comprometidos</div><div class="metric-value">${fmt(egresos)||'—'}</div></div>
+    <div class="metric"><div class="metric-label">Egresos pagados</div><div class="metric-value mv-success">${fmt(pagado)||'—'}</div></div>
+    <div class="metric"><div class="metric-label">Por pagar</div><div class="metric-value ${egresos-pagado>0?'mv-danger':''}">${fmt(egresos-pagado)||'—'}</div></div>
+    <div class="metric"><div class="metric-label">Hoy pendientes</div><div class="metric-value mv-info">${hoy}</div></div>
+    <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value ${vencidas>0?'mv-danger':''}">${vencidas}</div></div>
+  `;
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({fecha:today(),exportado_por:'Izer — Gerente Tesorería RANMA',state},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tesoreria_'+today()+'.json';a.click();toast('JSON exportado');
+}
+function exportTxt(){
+  const n=new Date();
+  const fecha=DAYS[n.getDay()]+' '+n.getDate()+' de '+MONTHS_LONG[n.getMonth()]+' '+n.getFullYear();
+  const ingresos=state.tasks.filter(t=>getCat(t.cat).tipo==='ingreso'&&t.monto>0).reduce((a,t)=>a+Number(t.monto),0);
+  const egresos=state.tasks.filter(t=>getCat(t.cat).tipo!=='ingreso'&&t.monto>0).reduce((a,t)=>a+Number(t.monto),0);
+  const pagado=state.tasks.filter(t=>t.pago&&t.monto>0&&getCat(t.cat).tipo!=='ingreso').reduce((a,t)=>a+Number(t.monto),0);
+  const lines=['══════════════════════════════════════════════════','  REPORTE DE TESORERÍA — RANMA','  '+fecha+'  |  Gerente: Izer','══════════════════════════════════════════════════','',
+    'RESUMEN',
+    '  Ingresos esperados  : '+(fmt(ingresos)||'$0.00'),
+    '  Egresos comprometidos: '+(fmt(egresos)||'$0.00'),
+    '  Egresos pagados     : '+(fmt(pagado)||'$0.00'),
+    '  Por pagar           : '+(fmt(egresos-pagado)||'$0.00'),
+    '','──────────────────────────────────────────────────','DETALLE DE TAREAS Y PAGOS',''];
+  const sorted=[...state.tasks].sort((a,b)=>(a.fecha||'9999')>(b.fecha||'9999')?1:-1);
+  sorted.forEach(t=>{
+    const cat=getCat(t.cat);
+    lines.push('  '+(t.done?'[✓]':'[ ]')+' '+fmtDateShort(t.fecha||'')+' · ['+cat.label+'] '+t.name);
+    if(t.monto>0)lines.push('    Monto   : '+fmt(t.monto));
+    if(t.factura)lines.push('    Factura : '+t.factura.name);
+    if(t.archivos&&t.archivos.length)lines.push('    Archivos: '+t.archivos.map(a=>a.name).join(', '));
+    if(t.pago){lines.push('    Ref.    : '+(t.pago.ref||'—'));lines.push('    Banco   : '+(t.pago.banco||'—'));lines.push('    Fecha   : '+t.pago.fecha);}
+    if(t.periodo&&(t.periodo.de||t.periodo.al))lines.push('    Periodo : '+(t.periodo.de||'?')+' al '+(t.periodo.al||'?'));
+    lines.push('');
+  });
+  lines.push('══════════════════════════════════════════════════');
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reporte_tesoreria_'+today()+'.txt';a.click();toast('Reporte exportado');
+}
+
+// ── TABS & RENDER ──────────────────────────────────────────────
+function switchTab(name){
+  activeTab=name;
+  const names=['agenda','todas','pagos','archivos'];
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.view').forEach((el,i)=>el.classList.toggle('active',names[i]===name));
+  if(name==='todas'){buildFilterCat();buildFilterCC();renderAll();}
+}
+
+function render(){
+  calcMetrics();
+  buildCalendar();
+  renderDayTasks();
+  renderPagos();
+  renderArchivos();
+  if(activeTab==='todas'){buildFilterCat();renderAll();}
+}
+
+// ── LOAD FROM GOOGLE SHEETS ───────────────────────────────────
+function loadFromSheets(){
+  const btn=document.getElementById('load-btn');
+  const status=document.getElementById('sync-status');
+  if(!confirm('Esto va a traer lo más reciente de Google Sheets y combinar con tus tareas locales. ¿Continuar?'))return;
+  btn.style.opacity='.5';btn.style.pointerEvents='none';
+  status.style.display='block';status.textContent='Cargando...';status.style.color='var(--text3)';
+  fetch(SCRIPT_URL,{method:'GET'})
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.ok&&data.tasks&&data.tasks.length){
+        // Merge: Sheets es la fuente de verdad, pero conservamos locales que no estén en Sheets
+        const sheetsIds=new Set(data.tasks.map(t=>t.id));
+        const soloLocales=state.tasks.filter(t=>!sheetsIds.has(t.id));
+        state.tasks=[...data.tasks.map(t=>({
+          id:t.id,name:t.name,cat:t.cat,priority:t.priority,fecha:t.fecha,time:t.time||'',
+          monto:t.monto||0,cc:t.cc||'',done:t.done,pago:t.pago,factura:t.factura,
+          archivos:t.archivos||[],periodo:t.periodo
+        })),...soloLocales];
+        nextId=state.tasks.length?Math.max(...state.tasks.map(t=>t.id))+1:1;
+        save();render();
+        const now=new Date();
+        status.textContent='✓ Cargado '+now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+        status.style.color='var(--success)';
+        toast('✓ '+data.tasks.length+' tareas cargadas de Sheets'+(soloLocales.length?' + '+soloLocales.length+' locales nuevas':''));
+      }else{
+        status.textContent='Sheets vacío';status.style.color='var(--text3)';
+        toast('No hay tareas en Sheets todavía');
+      }
+    })
+    .catch(()=>{
+      status.textContent='Error al cargar';status.style.color='var(--danger)';
+      toast('Error de conexión');
+    })
+    .finally(()=>{btn.style.opacity='1';btn.style.pointerEvents='auto';});
+}
+
+// ── SYNC GOOGLE SHEETS (merge-first) ─────────────────────────
+function syncSheets(){
+  const btn=document.getElementById('sync-btn');
+  const status=document.getElementById('sync-status');
+  btn.style.opacity='.5';btn.style.pointerEvents='none';
+  status.style.display='block';status.textContent='Sincronizando...';status.style.color='var(--text3)';
+
+  // PASO 1: Primero carga lo que hay en Sheets
+  fetch(SCRIPT_URL,{method:'GET'})
+    .then(r=>r.json())
+    .then(sheetsData=>{
+      let mergedTasks=state.tasks;
+      if(sheetsData.ok&&sheetsData.tasks&&sheetsData.tasks.length){
+        // Merge: combina Sheets + local, sin duplicados, local gana si hay conflicto de ID
+        const localIds=new Set(state.tasks.map(t=>t.id));
+        const soloSheets=sheetsData.tasks.filter(t=>!localIds.has(t.id));
+        mergedTasks=[...state.tasks,...soloSheets];
+        // Actualiza estado con el merge
+        state.tasks=mergedTasks;
+        nextId=state.tasks.length?Math.max(...state.tasks.map(t=>t.id))+1:1;
+        save();
+      }
+      // PASO 2: Manda el merge completo a Sheets
+      return fetch(SCRIPT_URL,{
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fecha:today(),exportado_por:'Izer — Gerente Tesorería RANMA',tasks:mergedTasks})
+      });
+    })
+    .then(()=>{
+      const now=new Date();
+      const h=now.getHours().toString().padStart(2,'0');
+      const m=now.getMinutes().toString().padStart(2,'0');
+      status.textContent='✓ Sincronizado '+h+':'+m;
+      status.style.color='var(--success)';
+      localStorage.setItem('ranma_last_sync_v5',now.toISOString());
+      render();
+      toast('✓ Sincronizado con Sheets ('+state.tasks.length+' tareas)');
+    })
+    .catch(()=>{
+      status.textContent='Error al sincronizar';status.style.color='var(--danger)';
+      toast('Error de conexión — intenta de nuevo');
+    })
+    .finally(()=>{btn.style.opacity='1';btn.style.pointerEvents='auto';});
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+document.getElementById('nt-name').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+updateDateDisplay();
+document.getElementById('nt-fecha').value=today();
+buildCatSelect('nt-cat');
+buildFilterCat();
+const lastSync=localStorage.getItem('ranma_last_sync_v5');
+if(lastSync){
+  const d=new Date(lastSync);
+  const h=d.getHours().toString().padStart(2,'0');
+  const m=d.getMinutes().toString().padStart(2,'0');
+  const status=document.getElementById('sync-status');
+  status.style.display='block';
+  status.textContent='✓ Último sync '+h+':'+m;
+  status.style.color='var(--text3)';
+}
+render();
+</script>
+</body>
+</html>
